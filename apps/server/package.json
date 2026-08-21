@@ -17,6 +17,7 @@
     "fastify": "^5.2.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12"
+    "@types/better-sqlite3": "^7.6.12",
+    "typescript": "^5.7.2"
   }
 }

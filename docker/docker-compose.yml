@@ -1,0 +1,49 @@
+# Sync server for a self-hosted Obsidian vault, plus an optional Cloudflare
+# tunnel sidecar.
+#
+#   docker compose up -d                     server only, reachable on the LAN
+#   docker compose --profile tunnel up -d    server plus the Cloudflare tunnel
+#
+# Mint a token for each device before connecting it:
+#   docker compose exec obsidian-sync node dist/cli.js token add "iPhone"
+
+services:
+  obsidian-sync:
+    image: ghcr.io/roylet/obsidiansync:latest
+    # Swap the image line for this to build from a checkout of the repo:
+    # build:
+    #   context: ..
+    #   dockerfile: docker/Dockerfile
+    container_name: obsidian-sync
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      DATA_DIR: /data
+      # Cloudflare's free plan rejects request bodies over 100 MB, so a larger
+      # value here would only produce uploads that fail at the edge.
+      MAX_FILE_MB: 100
+      # How long deleted and overwritten content stays recoverable, and how
+      # long a device can be offline before it must renegotiate from scratch.
+      TRASH_RETENTION_DAYS: 30
+      LOG_LEVEL: info
+    volumes:
+      # The vault lives here as ordinary files. Point your NAS backup at it.
+      - ./data:/data
+    ports:
+      # Only bound to loopback: reaching this from outside is the tunnel's job.
+      # Change to "8080:8080" to also use it directly over the LAN.
+      - "127.0.0.1:8080:8080"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: obsidian-sync-tunnel
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    # Token comes from the Cloudflare Zero Trust dashboard when the tunnel is
+    # created. Put it in a .env file beside this one as TUNNEL_TOKEN=...
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env}
+    depends_on:
+      obsidian-sync:
+        condition: service_healthy
+    # Reaches the server over the compose network, so the published port above
+    # is not involved and can stay bound to loopback.
