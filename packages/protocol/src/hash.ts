@@ -12,14 +12,26 @@ export const EMPTY_HASH = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca4959
 /** Hash of a tombstone, i.e. "no content at this path". */
 export const NULL_HASH = '';
 
+/**
+ * Structural stand-in for `SubtleCrypto`. The real type only exists with the
+ * DOM lib, and this package is compiled both for the plugin (DOM) and the
+ * server (no DOM).
+ */
+interface SubtleLike {
+  digest(algorithm: string, data: Uint8Array): Promise<ArrayBuffer>;
+}
+
 export async function sha256Hex(data: ArrayBuffer | Uint8Array): Promise<string> {
   const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-  const subtle = (globalThis as { crypto?: Crypto }).crypto?.subtle;
+  const subtle = (globalThis as { crypto?: { subtle?: SubtleLike } }).crypto?.subtle;
   if (subtle) {
     try {
-      // `slice()` detaches the view from any larger backing buffer, which
-      // `digest` requires when the Uint8Array is a partial view.
-      const digest = await subtle.digest('SHA-256', bytes.slice().buffer);
+      // Pass the view itself, never `.buffer`. Node's Buffer allocates small
+      // instances out of a shared 8 KB pool, so `.buffer` is that whole pool
+      // rather than this file's bytes, and `Buffer.prototype.slice` returns a
+      // view rather than a copy. `digest` accepts a BufferSource and honours
+      // byteOffset/byteLength, which is exactly what is wanted here.
+      const digest = await subtle.digest('SHA-256', bytes);
       return toHex(new Uint8Array(digest));
     } catch {
       // Fall through to the JS implementation below.

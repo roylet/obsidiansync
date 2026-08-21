@@ -2,3 +2,9 @@ packages:
   - 'packages/*'
   - 'apps/*'
   - 'tests/*'
+
+# better-sqlite3 needs its install script to fetch the prebuilt native binding;
+# esbuild needs its to install the platform binary.
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild

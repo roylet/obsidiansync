@@ -24,6 +24,19 @@ describe('sha256Hex', () => {
     expect(await sha256Hex(bytes.buffer)).toBe(await sha256Hex(bytes));
   });
 
+  it('hashes a Node Buffer as its own bytes, not its shared pool', async () => {
+    // Buffers under 4 KB are carved out of a shared 8 KB pool, so `.buffer` is
+    // the pool and `.slice()` is a view into it. Hashing either would produce
+    // a value that depends on unrelated allocations. Two Buffers with the same
+    // content must always hash the same, whatever else the pool holds.
+    const filler = Buffer.from('unrelated allocation'.repeat(20));
+    const first = Buffer.from('# Hello');
+    const second = Buffer.from('# Hello');
+    expect(await sha256Hex(first)).toBe(nodeHash(encoder.encode('# Hello')));
+    expect(await sha256Hex(second)).toBe(await sha256Hex(first));
+    expect(filler.byteLength).toBeGreaterThan(0);
+  });
+
   it('hashes a view into a larger buffer without including the rest', async () => {
     const backing = encoder.encode('XXXXpayloadYYYY');
     const view = backing.subarray(4, 11);

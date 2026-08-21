@@ -34,6 +34,15 @@ export interface ManifestEntry {
   hash: string;
   size: number;
   mtime: number;
+  /**
+   * The server hash this client last recorded for the path, if it has ever
+   * been in sync. This is what makes negotiation a three-way comparison
+   * instead of a two-way one: without it, a file the *server* changed while
+   * this client sat idle is indistinguishable from a genuine divergence, and
+   * every poll after a dropped cursor would manufacture conflict copies.
+   * Absent on a device syncing for the first time.
+   */
+  baseHash?: string;
 }
 
 /**
