@@ -1,0 +1,12 @@
+{
+  "name": "@obsidiansync/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "echo \"typechecked via the root vitest run\""
+  },
+  "devDependencies": {
+    "@obsidiansync/protocol": "workspace:*"
+  }
+}

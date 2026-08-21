@@ -1,0 +1,6 @@
+/* Vault Relay keeps its UI to the status bar and the settings tab, both of
+   which use Obsidian's own styling. Only the status indicator needs anything,
+   and it uses theme variables so it works in light and dark themes alike. */
+.status-bar-item.plugin-vault-relay {
+  color: var(--text-muted);
+}
